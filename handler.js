@@ -1,8 +1,9 @@
 'use strict';
 
 const jwt = require('jsonwebtoken');
+
 const SECRET_KEY = process.env.secret_key;
-const ACCESS_TOKEN_HEADER = process.env.access_token_header;
+const ACCESS_TOKEN_HEADER = "authorizationToken";
 
 const getAccessToken = function(params){
   return jwt.sign(params, SECRET_KEY, {
@@ -12,31 +13,45 @@ const getAccessToken = function(params){
 
 const verifyToken = function(event){
   const headers = event.headers;
-  const tokenInHeader = headers[ACCESS_TOKEN_HEADER];
-  console.log("SSIDA: ", tokenInHeader);
+  const tokenInHeader = event.authorizationToken;
+  console.log("token: ", tokenInHeader);
 
   return jwt.verify(tokenInHeader, SECRET_KEY, {
     algorithm: 'HS512'
   });
 }
 
-module.exports.validateToken = async event => {
+const getEffect = function(event){
+  var effect = null;
+  try{
+    const decodedToken = verifyToken(event);
+    effect = 'Allow';
+  }catch(err){
+    effect = 'Deny';
+  }
+  return effect;
+}
+
+module.exports.validateToken = (event, context, callback) => {
   var userInfo = {
     userId: "user1234",
     companyId: "company1234"
   }
 
-  return {
-    statusCode: 200,
-    body: JSON.stringify(
-      {
-        input: event,
-        token: getAccessToken(userInfo),
-        returenedUserInfo: verifyToken(event),
-        param: event.headers.Accept
-      },
-      null,
-      2
-    ),
-  };
+  console.log("event: ", event);
+  console.log("effect: ",getEffect(event));
+
+  return callback(null, {
+    "principalId": "user",
+    "policyDocument": {
+      "Version": "2012-10-17",
+      "Statement": [
+          {
+            "Action": "execute-api:Invoke",
+            "Effect": getEffect(event),
+            "Resource": event.methodArn
+          }
+        ]   
+    }
+  });
 };
