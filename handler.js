@@ -38,11 +38,14 @@ module.exports.validateToken = (event, context, callback) => {
   var userInfo = verifyToken(event);
   console.log("userId: ", userInfo.userId);
   console.log("companyId: ", userInfo.companyId);
-  
+
   var user = [userInfo.companyId, userInfo.userId];
 
   const effect = getEffect(event);
-  console.log("effect:", effect);
+  console.log("effect: ", effect);
+  console.log("methodArn: ", event.methodArn);
+
+  
 
   callback(null, {
       "principalId": user.join("|"),
@@ -58,8 +61,13 @@ module.exports.validateToken = (event, context, callback) => {
               "Resource": event.methodArn
             }
           ]   
+      },
+      "context": {
+        "userId": user[1],
+        "companyId": user[0]
       }
-  });
+    },
+  );
 
   console.log("event: ", event);
 };
