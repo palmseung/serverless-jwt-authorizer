@@ -55,7 +55,8 @@ module.exports.validateToken = (event, context, callback) => {
             {
               "Action": [
                 'lambda:InvokeFunction',
-                'execute-api:Invoke'
+                'execute-api:Invoke',
+                's3:GetObject'
               ],
               "Effect": effect,
               "Resource": event.methodArn
